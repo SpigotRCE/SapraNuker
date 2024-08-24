@@ -185,6 +185,9 @@ BOT = commands.Bot(command_prefix='!', intents=discord.Intents.all(), help_comma
 async def on_ready():
     await BOT.change_presence(status=discord.Status.idle, activity=discord.Game(name='Looking for a cup of coffee'))
     print("Bot loaded!")
+    print("Bot is in " + str(len(BOT.guilds)) + " server.")
+    for guild in BOT.guilds:
+        print(guild.name + " (" + str(guild.id) + ") owner: " + guild.owner.name + " (" + str(guild.owner.id) + ") ")
 
 
 @BOT.command()
