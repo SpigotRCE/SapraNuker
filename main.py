@@ -104,14 +104,14 @@ def get_all_roles():
     return roles
 
 
-def remove_channel(chnl):
+def remove_channel(_id):
     while True:
-        r = requests.delete(f"https://discord.com/api/v10/channels/{chnl}", headers=headers, proxies=get_proxy())
+        r = requests.delete(f"https://discord.com/api/v10/channels/{_id}", headers=headers, proxies=get_proxy())
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
             if r.status_code in [200, 201, 204]:
-                # print(f"[Success] Removed channel: {chnl}")
+                # print(f"[Success] Removed channel: {_id}")
                 return
 
 
