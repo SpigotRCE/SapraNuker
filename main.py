@@ -50,7 +50,7 @@ CHANNEL_NAMES = [
 
 GUILD = 0
 TOKEN = input("Enter token: ")
-USE_PROXY = True if input("Use proxy Y/n") in ["y", "yes", "Y", "Yes", "YES"] else False
+USE_PROXY = True if input("Use proxy Y/n (Not recommended)") in ["y", "yes", "Y", "Yes", "YES"] else False
 print("Using proxies" if USE_PROXY else "")
 headers = {'authorization': f'Bot {TOKEN}'}
 
