@@ -183,7 +183,7 @@ BOT = commands.Bot(command_prefix='!', intents=discord.Intents.all(), help_comma
 
 @BOT.event
 async def on_ready():
-    await BOT.change_presence(status=discord.Status.idle, activity=discord.Game(name='Nuking a server'))
+    await BOT.change_presence(status=discord.Status.idle, activity=discord.Game(name='Looking for a cup of coffee'))
     print("Bot loaded!")
 
 
