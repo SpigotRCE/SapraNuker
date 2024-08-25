@@ -3,6 +3,7 @@ import socket
 from os import system
 
 from colorama import init
+from discord import LoginFailure
 
 init(autoreset=True)
 
@@ -354,4 +355,8 @@ def fetch_proxies():
 if USE_PROXY:
     fetch_proxies()
 
-BOT.run(TOKEN)
+try:
+    BOT.run(TOKEN)
+except LoginFailure:
+    print("Invalid token has been passed!")
+    exit()
