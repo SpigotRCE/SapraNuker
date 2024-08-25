@@ -350,6 +350,7 @@ def fetch_proxies():
     for t in threads:
         t.join()
 
+    print(f' \n\n[/] Total online proxies: ({len(online_proxies)})')
     PROXIES = online_proxies
 
 if USE_PROXY:
