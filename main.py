@@ -20,7 +20,6 @@ except ModuleNotFoundError:
     system("python -m pip install colorama~=0.4.6")
     system("python3 -m pip install colorama~=0.4.6")
     input("Press enter to restart...")
-    main()
 
 
 colorama.init(autoreset=True)
